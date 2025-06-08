@@ -23,6 +23,9 @@ def search_pupils(roi: cv2.Mat) -> tuple[int, int]:
         cv2.drawContours(debug_image, contours[0], -1, (255, 255, 255), 3)
         cv2.imshow("Contours", debug_image)
     # get largest contour
+    if len(contours) == 0 or len(contours[0]) == 0:
+        print("No contours found")
+        return None
     largest_contour = max(contours[0], key=cv2.contourArea)
     center_of_mass = cv2.moments(largest_contour)
     if center_of_mass["m00"] == 0:
@@ -34,17 +37,17 @@ def search_pupils(roi: cv2.Mat) -> tuple[int, int]:
         cv2.circle(debug_image, (cx, cy), 5, (0, 0, 255), -1)
         cv2.imshow("center of mass", debug_image)
         cv2.waitKey(0)
-    return cx, cy
+    return (cx, cy)
 
 def detect_eyes(image_name: str) -> list[tuple[int, int, int, int]]:
     img = cv2.imread(f"./images/{image_name}")
-    # eye_cascade = cv2.CascadeClassifier("haarcascade_eye.xml")
-    eye_cascade = cv2.CascadeClassifier("haarcascade_lefteye_2splits.xml")
+    eye_cascade = cv2.CascadeClassifier("haarcascade_eye.xml")
+    # eye_cascade = cv2.CascadeClassifier("haarcascade_lefteye_2splits.xml")
     for ex, ey, ew, eh in eye_cascade.detectMultiScale(
         img,
         scaleFactor=1.6,
         minNeighbors=2,
-        minSize=(100, 100),
+        minSize=(200, 200),
         flags=cv2.CASCADE_SCALE_IMAGE,
     ):
         center = (ex + ew // 2, ey + eh // 2)
@@ -54,10 +57,12 @@ def detect_eyes(image_name: str) -> list[tuple[int, int, int, int]]:
             cv2.rectangle(img, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 6)
             print(f"Eye detected at: ({ex}, {ey}), ({ex +ew}, {ey+ eh})")
             print(f"Center of eye: {center}")
-        cx, cy = search_pupils(regionOfInterest)
-        if cx is not None and cy is not None:
-            if debug:
-                cv2.circle(img, (cx + ex, cy + ey), 5, (0, 0, 255), 10)
+        pupil = search_pupils(regionOfInterest)
+        if pupil is None:
+            continue
+        cx, cy = pupil
+        if debug:
+            cv2.circle(img, (cx + ex, cy + ey), 5, (0, 0, 255), 10)
             print(f"Pupil found at: ({cx}, {cy}) in region of interest")
         else:
             print("No pupil found in region of interest")
