@@ -1,2 +1,4 @@
 **/venv/
 images/
+**/output/
+**/.DS_Store
